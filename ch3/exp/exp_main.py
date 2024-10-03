@@ -203,11 +203,7 @@ class Exp_Main(Exp_Basic):
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
                 # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        outputs = self.model(batch_x)
-                else:
-                    outputs = self.model(batch_x)
+                outputs = self.model(batch_x)
 
                 f_dim = -1 if self.args.features == 'MS' else 0
                 
@@ -239,87 +235,7 @@ class Exp_Main(Exp_Basic):
             preds=test_data.inverse_transform(preds.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
             trues=test_data.inverse_transform(trues.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
             inputx=test_data.inverse_transform(inputx.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-        
-        # result save
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
-        f = open("result.txt", 'a')
-        f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
-        f.write('\n')
-        f.write('\n')
-        f.close()
-
-        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
-        np.save(folder_path + 'pred.npy', preds)
-        np.save(folder_path + 'true.npy', trues)
-        np.save(folder_path + 'x.npy', inputx)
-        return mse
-
-    def predict(self, setting, load=True):
-        pred_data, pred_loader = self._get_data(flag='pred')
-
-        if load:
-            path = os.path.join(self.args.checkpoints, setting)
-            best_model_path = path + '/' + 'checkpoint.pth'
-            self.model.load_state_dict(torch.load(best_model_path))
-
-        preds = []
-        trues = []
-        inputx = []
-
-        self.model.eval()
-        with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pred_loader):
-                batch_x = batch_x.float().to(self.device)
-                batch_y = batch_y.float()
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        outputs = self.model(batch_x)
-                else:
-                    outputs = self.model(batch_x)
-                f_dim = -1 if self.args.features == 'MS' else 0
-                
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                outputs = outputs.detach().cpu().numpy()
-                batch_y = batch_y.detach().cpu().numpy()
-                
-                preds.append(outputs)
-                trues.append(batch_y)
-                inputx.append(batch_x.detach().cpu().numpy())
-        preds = np.concatenate(preds, axis=0)
-        trues = np.concatenate(trues, axis=0)
-        inputx = np.concatenate(inputx, axis=0)
-        
-        preds=test_data.inverse_transform(preds.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-        trues=test_data.inverse_transform(trues.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-        inputx=test_data.inverse_transform(inputx.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-
-        # result save
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
-        print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
-        f = open("result.txt", 'a')
-        f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
-        f.write('\n')
-        f.write('\n')
-        f.close()
-
-        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
-        np.save(folder_path + 'real_prediction_pred.npy', preds)
-        np.save(folder_path + 'real_prediction_true.npy', trues)
-        np.save(folder_path + 'real_prediction_x.npy', inputx)
-
-        return
+        return preds, trues, inputx

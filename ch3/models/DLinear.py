@@ -19,7 +19,7 @@ class Model(nn.Module):
         # Series decomposition block from Autoformer
         self.decompsition = series_decomp(12)
         self.individual = individual
-        self.channels = configs.enc_in
+        self.channels = 7
 
         if self.individual:
             self.Linear_Seasonal = nn.ModuleList()

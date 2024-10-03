@@ -14,11 +14,10 @@ class Model(nn.Module):
         individual: Bool, whether shared model among different variates.
         """
         super(Model, self).__init__()
-        self.task_name = configs.task_name
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
         # Series decomposition block from Autoformer
-        self.decompsition = series_decomp(configs.moving_avg)
+        self.decompsition = series_decomp(12)
         self.individual = individual
         self.channels = configs.enc_in
 
@@ -44,10 +43,6 @@ class Model(nn.Module):
                 (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len]))
             self.Linear_Trend.weight = nn.Parameter(
                 (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len]))
-
-        if self.task_name == 'classification':
-            self.projection = nn.Linear(
-                configs.enc_in * configs.seq_len, configs.num_class)
 
     def encoder(self, x):
         seasonal_init, trend_init = self.decompsition(x)

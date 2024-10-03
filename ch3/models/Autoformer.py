@@ -40,7 +40,7 @@ class Model(nn.Module):
                     moving_avg=25,
                     dropout=0.1,
                     activation='gelu'
-                ) for l in range(3)
+                ) for l in range(2)
             ],
             norm_layer=my_Layernorm(64)
         )
@@ -64,7 +64,7 @@ class Model(nn.Module):
                     dropout=0.1,
                     activation='gelu',
                 )
-                for l in range(3)
+                for l in range(1)
             ],
             norm_layer=my_Layernorm(64),
             projection=nn.Linear(64, 7, bias=True)

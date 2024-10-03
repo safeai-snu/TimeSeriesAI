@@ -17,11 +17,9 @@ class Model(nn.Module):
 
     def __init__(self, configs):
         super(Model, self).__init__()
-        self.task_name = configs.task_name
         self.seq_len = configs.seq_len
         self.label_len = configs.label_len
         self.pred_len = configs.pred_len
-        self.output_attention = configs.output_attention
 
         # Decomp
         kernel_size = configs.moving_avg
@@ -36,11 +34,11 @@ class Model(nn.Module):
                 EncoderLayer(
                     AutoCorrelationLayer(
                         AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
-                                        output_attention=configs.output_attention),
+                                        output_attention=False),
                         configs.d_model, configs.n_heads),
                     configs.d_model,
                     configs.d_ff,
-                    moving_avg=configs.moving_avg,
+                    moving_avg=12,
                     dropout=configs.dropout,
                     activation=configs.activation
                 ) for l in range(configs.e_layers)
@@ -48,43 +46,31 @@ class Model(nn.Module):
             norm_layer=my_Layernorm(configs.d_model)
         )
         # Decoder
-        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
-            self.dec_embedding = DataEmbedding_wo_pos(configs.dec_in, configs.d_model, configs.embed, configs.freq,
+        self.dec_embedding = DataEmbedding_wo_pos(configs.dec_in, configs.d_model, configs.embed, configs.freq,
                                                       configs.dropout)
-            self.decoder = Decoder(
-                [
-                    DecoderLayer(
-                        AutoCorrelationLayer(
-                            AutoCorrelation(True, configs.factor, attention_dropout=configs.dropout,
-                                            output_attention=False),
-                            configs.d_model, configs.n_heads),
-                        AutoCorrelationLayer(
-                            AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
-                                            output_attention=False),
-                            configs.d_model, configs.n_heads),
-                        configs.d_model,
-                        configs.c_out,
-                        configs.d_ff,
-                        moving_avg=configs.moving_avg,
-                        dropout=configs.dropout,
-                        activation=configs.activation,
-                    )
-                    for l in range(configs.d_layers)
-                ],
-                norm_layer=my_Layernorm(configs.d_model),
-                projection=nn.Linear(configs.d_model, configs.c_out, bias=True)
-            )
-        if self.task_name == 'imputation':
-            self.projection = nn.Linear(
-                configs.d_model, configs.c_out, bias=True)
-        if self.task_name == 'anomaly_detection':
-            self.projection = nn.Linear(
-                configs.d_model, configs.c_out, bias=True)
-        if self.task_name == 'classification':
-            self.act = F.gelu
-            self.dropout = nn.Dropout(configs.dropout)
-            self.projection = nn.Linear(
-                configs.d_model * configs.seq_len, configs.num_class)
+        self.decoder = Decoder(
+            [
+                DecoderLayer(
+                    AutoCorrelationLayer(
+                        AutoCorrelation(True, configs.factor, attention_dropout=configs.dropout,
+                                        output_attention=False),
+                        configs.d_model, configs.n_heads),
+                    AutoCorrelationLayer(
+                        AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
+                                        output_attention=False),
+                        configs.d_model, configs.n_heads),
+                    configs.d_model,
+                    configs.c_out,
+                    configs.d_ff,
+                    moving_avg=12,
+                    dropout=configs.dropout,
+                    activation=configs.activation,
+                )
+                for l in range(configs.d_layers)
+            ],
+            norm_layer=my_Layernorm(configs.d_model),
+            projection=nn.Linear(configs.d_model, configs.c_out, bias=True)
+        )
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         # decomp init

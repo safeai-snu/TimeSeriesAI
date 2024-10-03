@@ -27,7 +27,7 @@ class Model(nn.Module):
         self.pad_in_len = ceil(1.0 * configs.seq_len / self.seg_len) * self.seg_len
         self.pad_out_len = ceil(1.0 * configs.pred_len / self.seg_len) * self.seg_len
         self.in_seg_num = self.pad_in_len // self.seg_len
-        self.out_seg_num = ceil(self.in_seg_num / (self.win_size ** (3 - 1)))
+        self.out_seg_num = ceil(self.in_seg_num / (self.win_size ** (2 - 1)))
         self.head_nf = 64 * self.out_seg_num
 
         # Embedding
@@ -52,7 +52,7 @@ class Model(nn.Module):
         self.decoder = Decoder(
             [
                 DecoderLayer(
-                    TwoStageAttentionLayer(configs, (self.pad_out_len // self.seg_len), configs.factor, configs.d_model, configs.n_heads,
+                    TwoStageAttentionLayer(configs, (self.pad_out_len // self.seg_len), 3, 64, 4,
                                            128, 0.1),
                     AttentionLayer(
                         FullAttention(False, 3, attention_dropout=0.1,

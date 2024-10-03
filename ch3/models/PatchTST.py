@@ -45,28 +45,28 @@ class Model(nn.Module):
 
         # patching and embedding
         self.patch_embedding = PatchEmbedding(
-            configs.d_model, patch_len, stride, padding, configs.dropout)
+            64, patch_len, stride, padding, 0.1)
 
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AttentionLayer(
-                        FullAttention(False, configs.factor, attention_dropout=configs.dropout,
-                                      output_attention=False), configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.d_ff,
-                    dropout=configs.dropout,
-                    activation=configs.activation
-                ) for l in range(configs.e_layers)
+                        FullAttention(False, 3, attention_dropout=0.1,
+                                      output_attention=False), 64, 4),
+                    64,
+                    128,
+                    dropout=0.1,
+                    activation='gelu'
+                ) for l in range(3)
             ],
-            norm_layer=nn.Sequential(Transpose(1,2), nn.BatchNorm1d(configs.d_model), Transpose(1,2))
+            norm_layer=nn.Sequential(Transpose(1,2), nn.BatchNorm1d(64), Transpose(1,2))
         )
 
         # Prediction Head
-        self.head_nf = configs.d_model * \
+        self.head_nf = 64 * \
                        int((configs.seq_len - patch_len) / stride + 2)
-        self.head = FlattenHead(configs.enc_in, self.head_nf, configs.pred_len, head_dropout=configs.dropout)
+        self.head = FlattenHead(7, self.head_nf, configs.pred_len, head_dropout=0.1)
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         # Normalization from Non-stationary Transformer

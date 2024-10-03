@@ -134,7 +134,7 @@ class Exp_Main(Exp_Basic):
                 print("Early stopping")
                 break
 
-            adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=True)
+            adjust_learning_rate(model_optim, epoch + 1, self.args, printout=True)
 
         return 
 

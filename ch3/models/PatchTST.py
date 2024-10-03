@@ -39,7 +39,6 @@ class Model(nn.Module):
         stride: int, stride for patch_embedding
         """
         super().__init__()
-        self.task_name = configs.task_name
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
         padding = stride
@@ -54,7 +53,7 @@ class Model(nn.Module):
                 EncoderLayer(
                     AttentionLayer(
                         FullAttention(False, configs.factor, attention_dropout=configs.dropout,
-                                      output_attention=configs.output_attention), configs.d_model, configs.n_heads),
+                                      output_attention=False), configs.d_model, configs.n_heads),
                     configs.d_model,
                     configs.d_ff,
                     dropout=configs.dropout,

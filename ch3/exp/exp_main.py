@@ -103,7 +103,7 @@ class Exp_Main(Exp_Basic):
 
                 # encoder - decoder
                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                f_dim = -1 if self.args.features == 'MS' else 0
+                f_dim = 0
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 

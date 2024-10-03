@@ -253,11 +253,11 @@ class TwoStageAttentionLayer(nn.Module):
                  seg_num, factor, d_model, n_heads, d_ff=None, dropout=0.1):
         super(TwoStageAttentionLayer, self).__init__()
         d_ff = d_ff or 4 * d_model
-        self.time_attention = AttentionLayer(FullAttention(False, configs.factor, attention_dropout=configs.dropout,
+        self.time_attention = AttentionLayer(FullAttention(False, 3, attention_dropout=0.1,
                                                            output_attention=False), d_model, n_heads)
-        self.dim_sender = AttentionLayer(FullAttention(False, configs.factor, attention_dropout=configs.dropout,
+        self.dim_sender = AttentionLayer(FullAttention(False, 3, attention_dropout=0.1,
                                                        output_attention=False), d_model, n_heads)
-        self.dim_receiver = AttentionLayer(FullAttention(False, configs.factor, attention_dropout=configs.dropout,
+        self.dim_receiver = AttentionLayer(FullAttention(False, 3, attention_dropout=0.1,
                                                          output_attention=False), d_model, n_heads)
         self.router = nn.Parameter(torch.randn(seg_num, factor, d_model))
 

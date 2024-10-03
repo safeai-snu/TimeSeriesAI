@@ -10,42 +10,41 @@ data_dict = {
 }
 
 def data_provider(args, flag):
-    Data = data_dict[args.data]
-    timeenc = 0 if args.embed != 'timeF' else 1
+    Data = Dataset_ETT_hour
+    timeenc = 1
 
     if flag == 'test':
         shuffle_flag = False
         drop_last = True
-        batch_size = args.batch_size
-        freq = args.freq
+        batch_size = 32
+        freq = 'h'
     elif flag == 'pred':
         shuffle_flag = False
         drop_last = False
-        batch_size = args.batch_size
-        freq = args.freq
+        batch_size = 32
+        freq = 'h'
         Data = Dataset_Pred
     else:
         shuffle_flag = True
         drop_last = True
-        batch_size = args.batch_size
-        freq = args.freq
+        batch_size = 32
+        freq = 'h'
 
     data_set = Data(
-        root_path=args.root_path,
-        data_path=args.data_path,
+        root_path='./dataset/',
+        data_path='ETTh1.csv',
         flag=flag,
         size=[args.seq_len, args.label_len, args.pred_len],
-        features=args.features,
-        target=args.target,
+        features='M',
+        target='OT',
         timeenc=timeenc,
-        freq=freq,
-        ratios=args.ratios
+        freq=freq
     )
     print(flag, len(data_set))
     data_loader = DataLoader(
         data_set,
         batch_size=batch_size,
         shuffle=shuffle_flag,
-        num_workers=args.num_workers,
+        num_workers=10,
         drop_last=drop_last)
     return data_set, data_loader

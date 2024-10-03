@@ -22,7 +22,6 @@ class Model(nn.Module):
         self.pred_len = configs.pred_len
         self.seg_len = 12
         self.win_size = 2
-        self.task_name = configs.task_name
 
         # The padding operation to handle invisible sgemnet length
         self.pad_in_len = ceil(1.0 * configs.seq_len / self.seg_len) * self.seg_len
@@ -68,14 +67,6 @@ class Model(nn.Module):
                 for l in range(configs.e_layers + 1)
             ],
         )
-        if self.task_name == 'imputation' or self.task_name == 'anomaly_detection':
-            self.head = FlattenHead(configs.enc_in, self.head_nf, configs.seq_len,
-                                    head_dropout=configs.dropout)
-        elif self.task_name == 'classification':
-            self.flatten = nn.Flatten(start_dim=-2)
-            self.dropout = nn.Dropout(configs.dropout)
-            self.projection = nn.Linear(
-                self.head_nf * configs.enc_in, configs.num_class)
 
 
 
@@ -91,55 +82,7 @@ class Model(nn.Module):
         dec_out = self.decoder(dec_in, enc_out)
         return dec_out
 
-    def imputation(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask):
-        # embedding
-        x_enc, n_vars = self.enc_value_embedding(x_enc.permute(0, 2, 1))
-        x_enc = rearrange(x_enc, '(b d) seg_num d_model -> b d seg_num d_model', d=n_vars)
-        x_enc += self.enc_pos_embedding
-        x_enc = self.pre_norm(x_enc)
-        enc_out, attns = self.encoder(x_enc)
-
-        dec_out = self.head(enc_out[-1].permute(0, 1, 3, 2)).permute(0, 2, 1)
-
-        return dec_out
-
-    def anomaly_detection(self, x_enc):
-        # embedding
-        x_enc, n_vars = self.enc_value_embedding(x_enc.permute(0, 2, 1))
-        x_enc = rearrange(x_enc, '(b d) seg_num d_model -> b d seg_num d_model', d=n_vars)
-        x_enc += self.enc_pos_embedding
-        x_enc = self.pre_norm(x_enc)
-        enc_out, attns = self.encoder(x_enc)
-
-        dec_out = self.head(enc_out[-1].permute(0, 1, 3, 2)).permute(0, 2, 1)
-        return dec_out
-
-    def classification(self, x_enc, x_mark_enc):
-        # embedding
-        x_enc, n_vars = self.enc_value_embedding(x_enc.permute(0, 2, 1))
-
-        x_enc = rearrange(x_enc, '(b d) seg_num d_model -> b d seg_num d_model', d=n_vars)
-        x_enc += self.enc_pos_embedding
-        x_enc = self.pre_norm(x_enc)
-        enc_out, attns = self.encoder(x_enc)
-        # Output from Non-stationary Transformer
-        output = self.flatten(enc_out[-1].permute(0, 1, 3, 2))
-        output = self.dropout(output)
-        output = output.reshape(output.shape[0], -1)
-        output = self.projection(output)
-        return output
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
-        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
-            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
-            return dec_out[:, -self.pred_len:, :]  # [B, L, D]
-        if self.task_name == 'imputation':
-            dec_out = self.imputation(x_enc, x_mark_enc, x_dec, x_mark_dec, mask)
-            return dec_out  # [B, L, D]
-        if self.task_name == 'anomaly_detection':
-            dec_out = self.anomaly_detection(x_enc)
-            return dec_out  # [B, L, D]
-        if self.task_name == 'classification':
-            dec_out = self.classification(x_enc, x_mark_enc)
-            return dec_out  # [B, N]
-        return None
+        dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+        return dec_out[:, -self.pred_len:, :]  # [B, L, D]

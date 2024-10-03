@@ -18,51 +18,49 @@ class Model(nn.Module):
         self.label_len = configs.label_len
 
         # Embedding
-        self.enc_embedding = DataEmbedding(configs.enc_in, configs.d_model, configs.embed, configs.freq,
-                                           configs.dropout)
-        self.dec_embedding = DataEmbedding(configs.dec_in, configs.d_model, configs.embed, configs.freq,
-                                           configs.dropout)
+        self.enc_embedding = DataEmbedding(7, 64, 'timeF', 'h', 0.1)
+        self.dec_embedding = DataEmbedding(7, 64, 'timeF', 'h', 0.1)
 
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AttentionLayer(
-                        ProbAttention(False, configs.factor, attention_dropout=configs.dropout,
+                        ProbAttention(False, 3, attention_dropout=0.1,
                                       output_attention=False),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.d_ff,
-                    dropout=configs.dropout,
-                    activation=configs.activation
-                ) for l in range(configs.e_layers)
+                        64, 4),
+                    64,
+                    128,
+                    dropout=0.1,
+                    activation='gelu'
+                ) for l in range(2)
             ],
             [
                 ConvLayer(
-                    configs.d_model
-                ) for l in range(configs.e_layers - 1)
-            ] if configs.distil else None,
-            norm_layer=torch.nn.LayerNorm(configs.d_model)
+                    64
+                ) for l in range(2 - 1)
+            ] if True else None,
+            norm_layer=torch.nn.LayerNorm(64)
         )
         # Decoder
         self.decoder = Decoder(
             [
                 DecoderLayer(
                     AttentionLayer(
-                        ProbAttention(True, configs.factor, attention_dropout=configs.dropout, output_attention=False),
-                        configs.d_model, configs.n_heads),
+                        ProbAttention(True, 3, attention_dropout=0.1, output_attention=False),
+                        64, 4),
                     AttentionLayer(
-                        ProbAttention(False, configs.factor, attention_dropout=configs.dropout, output_attention=False),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.d_ff,
-                    dropout=configs.dropout,
-                    activation=configs.activation,
+                        ProbAttention(False, 3, attention_dropout=0.1, output_attention=False),
+                        64, 4),
+                    64,
+                    128,
+                    dropout=0.1,
+                    activation='gelu',
                 )
-                for l in range(configs.d_layers)
+                for l in range(1)
             ],
-            norm_layer=torch.nn.LayerNorm(configs.d_model),
-            projection=nn.Linear(configs.d_model, configs.c_out, bias=True)
+            norm_layer=torch.nn.LayerNorm(64),
+            projection=nn.Linear(64, 7, bias=True)
         )
 
     def long_forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):

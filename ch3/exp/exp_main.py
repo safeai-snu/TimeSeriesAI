@@ -141,19 +141,12 @@ class Exp_Main(Exp_Basic):
     def test(self, setting):
         test_data, test_loader = self._get_data(flag='test')
         
-        if test:
-            print('loading model')
-            self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth'),map_location='cuda:0'))
 
         preds = []
         trues = []
         inputx = []
 
-        folder_path = './test_results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        self.model.eval()
+        self.best_model.eval()
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
                 batch_x = batch_x.float().to(self.device)
@@ -166,7 +159,7 @@ class Exp_Main(Exp_Basic):
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
                 # encoder - decoder
-                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                outputs = self.best_model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
                 f_dim = 0
                 
@@ -181,11 +174,6 @@ class Exp_Main(Exp_Basic):
                 preds.append(pred)
                 trues.append(true)
                 inputx.append(batch_x.detach().cpu().numpy())
-                if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
 
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)

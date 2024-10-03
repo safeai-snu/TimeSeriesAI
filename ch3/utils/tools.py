@@ -8,14 +8,7 @@ plt.switch_backend('agg')
 
 def adjust_learning_rate(optimizer, scheduler, epoch, args, printout=True):
     # lr = args.learning_rate * (0.2 ** (epoch // 2))
-    if args.lradj == 'type1':
-        lr_adjust = {epoch: args.learning_rate * (0.5 ** ((epoch - 1) // 1))}
-    elif args.lradj=='type2':
-        lr_adjust = {2: args.learning_rate * 0.5 ** 1, 4: args.learning_rate * 0.5 ** 2,
-                     6: args.learning_rate * 0.5 ** 3, 8: args.learning_rate * 0.5 ** 4,
-                     10: args.learning_rate * 0.5 ** 5}
-    elif args.lradj == 'TST':
-        lr_adjust = {epoch: scheduler.get_last_lr()[0]}
+    lr_adjust = {epoch: 0.01 * (0.5 ** ((epoch - 1) // 1))}
     
     if epoch in lr_adjust.keys():
         lr = lr_adjust[epoch]

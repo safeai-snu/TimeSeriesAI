@@ -22,54 +22,52 @@ class Model(nn.Module):
         self.pred_len = configs.pred_len
 
         # Decomp
-        kernel_size = configs.moving_avg
+        kernel_size = 25
         self.decomp = series_decomp(kernel_size)
 
         # Embedding
-        self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,
-                                                  configs.dropout)
+        self.enc_embedding = DataEmbedding_wo_pos(3, 64, 128, 'h', 0.1)
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AutoCorrelationLayer(
-                        AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
+                        AutoCorrelation(False, 3, attention_dropout=0.1,
                                         output_attention=False),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.d_ff,
-                    moving_avg=12,
-                    dropout=configs.dropout,
-                    activation=configs.activation
-                ) for l in range(configs.e_layers)
+                        64, 4),
+                    64,
+                    128,
+                    moving_avg=25,
+                    dropout=0.1,
+                    activation='gelu'
+                ) for l in range(3)
             ],
-            norm_layer=my_Layernorm(configs.d_model)
+            norm_layer=my_Layernorm(64)
         )
         # Decoder
-        self.dec_embedding = DataEmbedding_wo_pos(configs.dec_in, configs.d_model, configs.embed, configs.freq,
-                                                      configs.dropout)
+        self.dec_embedding = DataEmbedding_wo_pos(3, 64, 'timeF', 'h', 0.1)
         self.decoder = Decoder(
             [
                 DecoderLayer(
                     AutoCorrelationLayer(
-                        AutoCorrelation(True, configs.factor, attention_dropout=configs.dropout,
+                        AutoCorrelation(True, 3, attention_dropout=0.1,
                                         output_attention=False),
-                        configs.d_model, configs.n_heads),
+                        64, 4),
                     AutoCorrelationLayer(
-                        AutoCorrelation(False, configs.factor, attention_dropout=configs.dropout,
+                        AutoCorrelation(False, 3, attention_dropout=0.1,
                                         output_attention=False),
-                        configs.d_model, configs.n_heads),
-                    configs.d_model,
-                    configs.c_out,
-                    configs.d_ff,
-                    moving_avg=12,
-                    dropout=configs.dropout,
-                    activation=configs.activation,
+                        64, 4),
+                    64,
+                    7,
+                    128,
+                    moving_avg=25,
+                    dropout=0.1,
+                    activation='gelu',
                 )
-                for l in range(configs.d_layers)
+                for l in range(3)
             ],
-            norm_layer=my_Layernorm(configs.d_model),
-            projection=nn.Linear(configs.d_model, configs.c_out, bias=True)
+            norm_layer=my_Layernorm(64),
+            projection=nn.Linear(64, 7, bias=True)
         )
 
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):

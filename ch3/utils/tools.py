@@ -52,7 +52,7 @@ class EarlyStopping:
             self.counter = 0
         return self.best_model
 
-    def save_checkpoint(self, val_loss, model, path):
+    def save_checkpoint(self, val_loss, model):
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         self.val_loss_min = val_loss

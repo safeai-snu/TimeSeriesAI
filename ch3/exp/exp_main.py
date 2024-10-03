@@ -178,11 +178,6 @@ class Exp_Main(Exp_Basic):
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
         inputx = np.concatenate(inputx, axis=0)
-        
-        if self.args.inverse:
-            preds=test_data.inverse_transform(preds.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
-            trues=test_data.inverse_transform(trues.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
-            inputx=test_data.inverse_transform(inputx.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))

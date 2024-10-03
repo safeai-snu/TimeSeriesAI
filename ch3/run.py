@@ -41,16 +41,6 @@ if __name__ == '__main__':
     parser.add_argument('--label_len', type=int, default=48, help='start token length')
     parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
 
-    # model define
-    parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
-    parser.add_argument('--d_model', type=int, default=128, help='dimension of model')
-    parser.add_argument('--n_heads', type=int, default=16, help='num of heads')
-    parser.add_argument('--e_layers', type=int, default=0, help='num of encoder layers')
-    parser.add_argument('--d_layers', type=int, default=3, help='num of decoder layers')
-    parser.add_argument('--d_ff', type=int, default=256, help='dimension of fcn')
-    parser.add_argument('--dropout', type=float, default=0.2, help='dropout')
-    parser.add_argument('--embed', type=str, default='timeF',
-                        help='time features encoding, options:[timeF, fixed, learned]')
     parser.add_argument('--use_norm', type=int, default=1, help='whether to use normalize; True 1 False 0')
 
     # optimization

@@ -17,7 +17,7 @@ class Model(nn.Module):
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
         # Series decomposition block from Autoformer
-        self.decompsition = series_decomp(12)
+        self.decompsition = series_decomp(25)
         self.individual = individual
         self.channels = 7
 

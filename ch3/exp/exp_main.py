@@ -22,6 +22,7 @@ warnings.filterwarnings('ignore')
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args)
+        self.best_model=None
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).float()
@@ -73,22 +74,16 @@ class Exp_Main(Exp_Basic):
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
-
         time_now = time.time()
 
         train_steps = len(train_loader)
-        early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
+        early_stopping = EarlyStopping(patience=3, verbose=True)
 
         model_optim = self._select_optimizer()
         criterion = self._select_criterion()
             
-        scheduler = lr_scheduler.OneCycleLR(optimizer = model_optim,
-                                           steps_per_epoch = train_steps,
-                                           pct_start = self.args.pct_start,
-                                           epochs = self.args.train_epochs,
-                                           max_lr = self.args.learning_rate)
 
-        for epoch in range(self.args.train_epochs):
+        for epoch in range(10):
             iter_count = 0
             train_loss = []
 
@@ -118,7 +113,7 @@ class Exp_Main(Exp_Basic):
                 if (i + 1) % 100 == 0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                     speed = (time.time() - time_now) / iter_count
-                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                    left_time = speed * ((10 - epoch) * train_steps - i)
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
@@ -126,9 +121,6 @@ class Exp_Main(Exp_Basic):
                 loss.backward()                                         
                 model_optim.step()
                     
-                if self.args.lradj == 'TST':
-                    adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
-                    scheduler.step()
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
@@ -137,19 +129,16 @@ class Exp_Main(Exp_Basic):
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
-            early_stopping(vali_loss, self.model)
+            self.best_model = early_stopping(vali_loss, self.model)
             if early_stopping.early_stop:
                 print("Early stopping")
                 break
 
-            if self.args.lradj != 'TST':
-                adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=True)
-            else:
-                print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
+            print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
 
-        return self.model
+        return 
 
-    def test(self, setting, test=0):
+    def test(self, setting):
         test_data, test_loader = self._get_data(flag='test')
         
         if test:
@@ -179,7 +168,7 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                f_dim = -1 if self.args.features == 'MS' else 0
+                f_dim = 0
                 
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -198,17 +187,14 @@ class Exp_Main(Exp_Basic):
                     pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
                     visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
 
-        if self.args.test_flop:
-            test_params_flop((batch_x.shape[1],batch_x.shape[2]))
-            exit()
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
         inputx = np.concatenate(inputx, axis=0)
         
         if self.args.inverse:
-            preds=test_data.inverse_transform(preds.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-            trues=test_data.inverse_transform(trues.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
-            inputx=test_data.inverse_transform(inputx.reshape(-1, self.args.dec_in)).reshape(-1,self.args.pred_len, self.args.dec_in)
+            preds=test_data.inverse_transform(preds.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
+            trues=test_data.inverse_transform(trues.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
+            inputx=test_data.inverse_transform(inputx.reshape(-1, 7)).reshape(-1,self.args.pred_len, self.args.dec_in)
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rmse:{}'.format(mse, mae, rmse))
